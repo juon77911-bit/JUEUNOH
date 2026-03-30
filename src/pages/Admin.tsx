@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { Project, ArchiveItem, SiteConfig, ContentBlock } from '../types';
-import { Plus, Trash2, Edit2, Save, X, LayoutDashboard, Briefcase, History, Settings, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, LayoutDashboard, Briefcase, History, Settings, ChevronUp, ChevronDown, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { auth, googleProvider } from '../firebase';
+import { signInWithPopup, signOut } from 'firebase/auth';
 
 const Admin = () => {
   const { 
     data, 
+    user,
+    isAuthReady,
     updateConfig, 
     addProject, 
     updateProject, 
@@ -31,6 +35,17 @@ const Admin = () => {
       setError('비밀번호가 일치하지 않습니다.');
     }
   };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError('구글 로그인에 실패했습니다.');
+    }
+  };
+
+  const isAdmin = user?.email === 'juon77911@gmail.com';
 
   if (!isLoggedIn) {
     return (
@@ -70,12 +85,47 @@ const Admin = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-24 flex flex-col gap-12">
-      <header className="flex flex-col gap-4">
-        <h1 className="text-4xl font-bold tracking-tighter flex items-center gap-4">
-          <LayoutDashboard size={32} style={{ color: data.config.accentColor }} />
-          관리자 대시보드
-        </h1>
-        <p className="text-white/50">포트폴리오의 모든 내용을 실시간으로 관리하세요.</p>
+      <header className="flex justify-between items-start">
+        <div className="flex flex-col gap-4">
+          <h1 className="text-4xl font-bold tracking-tighter flex items-center gap-4">
+            <LayoutDashboard size={32} style={{ color: data.config.accentColor }} />
+            관리자 대시보드
+          </h1>
+          <p className="text-white/50">포트폴리오의 모든 내용을 실시간으로 관리하세요.</p>
+        </div>
+        
+        <div className="flex flex-col items-end gap-2">
+          {!user ? (
+            <button
+              onClick={handleGoogleLogin}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm"
+            >
+              <LogIn size={16} />
+              Google로 인증 (데이터 저장 권한)
+            </button>
+          ) : (
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2 text-sm">
+                <span className={isAdmin ? "text-green-400" : "text-red-400"}>
+                  {isAdmin ? "인증됨 (관리자)" : "인증됨 (권한 없음)"}
+                </span>
+                <span className="text-white/30">|</span>
+                <span className="text-white/50">{user.email}</span>
+              </div>
+              <button 
+                onClick={() => signOut(auth)}
+                className="text-xs text-white/30 hover:text-white/50 underline"
+              >
+                로그아웃
+              </button>
+            </div>
+          )}
+          {!isAdmin && user && (
+            <p className="text-[10px] text-red-400/70 max-w-[200px] text-right">
+              * juon77911@gmail.com 계정으로 로그인해야 데이터 저장이 가능합니다.
+            </p>
+          )}
+        </div>
       </header>
 
       {/* Tabs */}
