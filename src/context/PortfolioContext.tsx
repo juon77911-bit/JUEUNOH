@@ -1,213 +1,158 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PortfolioData, Project, ArchiveItem, SiteConfig } from '../types';
 import { initialData } from '../constants';
-import { db, auth } from '../firebase';
-import { 
-  doc, 
-  onSnapshot, 
-  setDoc, 
-  collection, 
-  query, 
-  orderBy, 
-  writeBatch,
-  deleteDoc
-} from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface PortfolioContextType {
   data: PortfolioData;
-  user: User | null;
-  isAuthReady: boolean;
-  updateConfig: (config: SiteConfig) => Promise<void>;
-  addProject: (project: Project) => Promise<void>;
-  updateProject: (project: Project) => Promise<void>;
-  deleteProject: (id: string) => Promise<void>;
-  reorderProjects: (startIndex: number, endIndex: number) => Promise<void>;
-  addArchiveItem: (item: ArchiveItem) => Promise<void>;
-  updateArchiveItem: (item: ArchiveItem) => Promise<void>;
-  deleteArchiveItem: (id: string) => Promise<void>;
-  reorderArchiveItems: (startIndex: number, endIndex: number) => Promise<void>;
+  updateConfig: (config: SiteConfig) => void;
+  addProject: (project: Project) => void;
+  updateProject: (project: Project) => void;
+  deleteProject: (id: string) => void;
+  reorderProjects: (startIndex: number, endIndex: number) => void;
+  addArchiveItem: (item: ArchiveItem) => void;
+  updateArchiveItem: (item: ArchiveItem) => void;
+  deleteArchiveItem: (id: string) => void;
+  reorderArchiveItems: (startIndex: number, endIndex: number) => void;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
 export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<PortfolioData>(initialData);
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Auth state listener
+  // Load data from server on mount
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthReady(true);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Firestore listeners
-  useEffect(() => {
-    // Listen to config
-    const unsubConfig = onSnapshot(doc(db, 'settings', 'config'), (docSnap) => {
-      if (docSnap.exists()) {
-        setData(prev => ({
-          ...prev,
-          config: {
-            ...initialData.config,
-            ...docSnap.data() as SiteConfig,
-            fontSizes: {
-              ...initialData.config.fontSizes,
-              ...(docSnap.data() as SiteConfig).fontSizes || {}
-            },
-            projectLabels: {
-              ...initialData.config.projectLabels,
-              ...(docSnap.data() as SiteConfig).projectLabels || {}
-            },
-            sectionDescriptions: {
-              ...initialData.config.sectionDescriptions,
-              ...(docSnap.data() as SiteConfig).sectionDescriptions || {}
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/portfolio');
+        if (response.ok) {
+          const serverData = await response.json();
+          // Merge with initialData to ensure new fields are present
+          setData({
+            ...initialData,
+            ...serverData,
+            config: {
+              ...initialData.config,
+              ...serverData.config,
+              fontSizes: {
+                ...initialData.config.fontSizes,
+                ...(serverData.config?.fontSizes || {})
+              },
+              projectLabels: {
+                ...initialData.config.projectLabels,
+                ...(serverData.config?.projectLabels || {})
+              },
+              sectionDescriptions: {
+                ...initialData.config.sectionDescriptions,
+                ...(serverData.config?.sectionDescriptions || {})
+              }
             }
-          }
-        }));
-      } else {
-        // Initialize if not exists
-        setDoc(doc(db, 'settings', 'config'), initialData.config);
+          });
+        } else if (response.status === 404) {
+          // If data.json doesn't exist yet, save initialData to create it
+          await fetch('/api/portfolio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initialData)
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch portfolio data:', error);
+      } finally {
+        setIsLoaded(true);
       }
-    });
-
-    // Listen to projects
-    const unsubProjects = onSnapshot(query(collection(db, 'projects'), orderBy('id')), (querySnap) => {
-      const projects: Project[] = [];
-      querySnap.forEach((doc) => {
-        projects.push(doc.data() as Project);
-      });
-      if (projects.length > 0) {
-        setData(prev => ({ ...prev, projects }));
-      } else {
-        // Initialize if empty
-        const batch = writeBatch(db);
-        initialData.projects.forEach(p => {
-          batch.set(doc(db, 'projects', p.id), p);
-        });
-        batch.commit();
-      }
-    });
-
-    // Listen to archive
-    const unsubArchive = onSnapshot(query(collection(db, 'archive'), orderBy('id')), (querySnap) => {
-      const archive: ArchiveItem[] = [];
-      querySnap.forEach((doc) => {
-        archive.push(doc.data() as ArchiveItem);
-      });
-      if (archive.length > 0) {
-        setData(prev => ({ ...prev, archive }));
-      } else {
-        // Initialize if empty
-        const batch = writeBatch(db);
-        initialData.archive.forEach(a => {
-          batch.set(doc(db, 'archive', a.id), a);
-        });
-        batch.commit();
-      }
-    });
-
-    return () => {
-      unsubConfig();
-      unsubProjects();
-      unsubArchive();
     };
+
+    fetchData();
   }, []);
+
+  // Save data to server whenever it changes (after initial load)
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const saveData = async () => {
+      try {
+        await fetch('/api/portfolio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } catch (error) {
+        console.error('Failed to save portfolio data:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(saveData, 1000); // Debounce save
+    return () => clearTimeout(timeoutId);
+  }, [data, isLoaded]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--main-color', data.config.accentColor);
     document.documentElement.style.setProperty('--sub-color', data.config.secondaryColor || '#00E5FF');
   }, [data.config.accentColor, data.config.secondaryColor]);
 
-  const updateConfig = async (config: SiteConfig) => {
-    try {
-      await setDoc(doc(db, 'settings', 'config'), config);
-    } catch (error) {
-      console.error('Failed to update config:', error);
-    }
+  const updateConfig = (config: SiteConfig) => {
+    setData(prev => ({ ...prev, config }));
   };
 
-  const addProject = async (project: Project) => {
-    try {
-      await setDoc(doc(db, 'projects', project.id), project);
-    } catch (error) {
-      console.error('Failed to add project:', error);
-    }
+  const addProject = (project: Project) => {
+    setData(prev => ({ ...prev, projects: [...prev.projects, project] }));
   };
 
-  const updateProject = async (project: Project) => {
-    try {
-      await setDoc(doc(db, 'projects', project.id), project);
-    } catch (error) {
-      console.error('Failed to update project:', error);
-    }
+  const updateProject = (project: Project) => {
+    setData(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => p.id === project.id ? project : p)
+    }));
   };
 
-  const deleteProject = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'projects', id));
-    } catch (error) {
-      console.error('Failed to delete project:', error);
-    }
+  const deleteProject = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      projects: prev.projects.filter(p => p.id !== id)
+    }));
   };
 
-  const reorderProjects = async (startIndex: number, endIndex: number) => {
-    const result = Array.from(data.projects);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
-    
-    const batch = writeBatch(db);
-    result.forEach((p: Project) => {
-      batch.set(doc(db, 'projects', p.id), p);
+  const reorderProjects = (startIndex: number, endIndex: number) => {
+    setData(prev => {
+      const result = Array.from(prev.projects);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      return { ...prev, projects: result };
     });
-    await batch.commit();
   };
 
-  const addArchiveItem = async (item: ArchiveItem) => {
-    try {
-      await setDoc(doc(db, 'archive', item.id), item);
-    } catch (error) {
-      console.error('Failed to add archive item:', error);
-    }
+  const addArchiveItem = (item: ArchiveItem) => {
+    setData(prev => ({ ...prev, archive: [...prev.archive, item] }));
   };
 
-  const updateArchiveItem = async (item: ArchiveItem) => {
-    try {
-      await setDoc(doc(db, 'archive', item.id), item);
-    } catch (error) {
-      console.error('Failed to update archive item:', error);
-    }
+  const updateArchiveItem = (item: ArchiveItem) => {
+    setData(prev => ({
+      ...prev,
+      archive: prev.archive.map(a => a.id === item.id ? item : a)
+    }));
   };
 
-  const deleteArchiveItem = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'archive', id));
-    } catch (error) {
-      console.error('Failed to delete archive item:', error);
-    }
+  const deleteArchiveItem = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      archive: prev.archive.filter(a => a.id !== id)
+    }));
   };
 
-  const reorderArchiveItems = async (startIndex: number, endIndex: number) => {
-    const result = Array.from(data.archive);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
-    
-    const batch = writeBatch(db);
-    result.forEach((a: ArchiveItem) => {
-      batch.set(doc(db, 'archive', a.id), a);
+  const reorderArchiveItems = (startIndex: number, endIndex: number) => {
+    setData(prev => {
+      const result = Array.from(prev.archive);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      return { ...prev, archive: result };
     });
-    await batch.commit();
   };
 
   return (
     <PortfolioContext.Provider value={{
       data,
-      user,
-      isAuthReady,
       updateConfig,
       addProject,
       updateProject,
