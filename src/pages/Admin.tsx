@@ -167,15 +167,6 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">직함 (Role)</label>
-            <input
-              type="text"
-              value={formData.role}
-              onChange={e => setFormData({ ...formData, role: e.target.value })}
-              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">포인트 컬러</label>
             <div className="flex gap-4 items-center">
               <input
@@ -225,7 +216,7 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
 
       <section className="flex flex-col gap-6">
         <h3 className="text-xl font-bold border-l-4 pl-4 border-white/20">폰트 크기 설정 (px)</h3>
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-4 gap-8">
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">슬로건</label>
             <input
@@ -250,6 +241,16 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
               type="number"
               value={formData.fontSizes.heading}
               onChange={e => setFormData({ ...formData, fontSizes: { ...formData.fontSizes, heading: parseInt(e.target.value) } })}
+              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-white/40">프로젝트 줄 간격</label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.fontSizes.projectLineHeight || 1.7}
+              onChange={e => setFormData({ ...formData, fontSizes: { ...formData.fontSizes, projectLineHeight: parseFloat(e.target.value) } })}
               className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
             />
           </div>
@@ -309,6 +310,50 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
             onChange={e => setFormData({ ...formData, about: e.target.value })}
             className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors resize-none"
           />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <label className="text-xs font-bold uppercase tracking-widest text-white/40">자기소개 이미지 (최대 5장)</label>
+          <div className="grid grid-cols-5 gap-4">
+            {(formData.aboutImages || []).map((img, i) => (
+              <div key={i} className="relative aspect-[3/4] rounded-xl overflow-hidden border border-white/10 group">
+                <img src={img} alt="About" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, aboutImages: formData.aboutImages.filter((_, idx) => idx !== i) })}
+                  className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
+            {(formData.aboutImages || []).length < 5 && (
+              <label className="aspect-[3/4] rounded-xl border-2 border-dashed border-white/10 hover:border-white/30 transition-colors flex flex-col items-center justify-center cursor-pointer gap-2">
+                <Plus size={24} className="text-white/30" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/20">Upload</span>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (!files) return;
+                    Array.from(files).forEach((file: File) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setFormData(prev => ({
+                          ...prev,
+                          aboutImages: [...(prev.aboutImages || []), reader.result as string].slice(0, 5)
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  }}
+                />
+              </label>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -614,6 +659,78 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
     setFormData({ ...formData, contentBlocks: result });
   };
 
+  const applyTag = (textareaId: string, tag: string, blockId?: string) => {
+    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+    const beforeText = text.substring(0, start);
+    const afterText = text.substring(end);
+
+    let startTag = '';
+    let endTag = '';
+
+    if (tag === 'bold') {
+      startTag = '<strong>';
+      endTag = '</strong>';
+    } else if (tag === 'main') {
+      startTag = '<span class="text-main">';
+      endTag = '</span>';
+    } else if (tag === 'sub') {
+      startTag = '<span class="text-sub">';
+      endTag = '</span>';
+    }
+
+    const newText = beforeText + startTag + selectedText + endTag + afterText;
+    
+    if (blockId) {
+      setFormData(prev => ({
+        ...prev,
+        contentBlocks: prev.contentBlocks.map(b => 
+          b.id === blockId ? { ...b, content: newText } : b
+        )
+      }));
+    } else {
+      // For main project description
+      setFormData(prev => ({ ...prev, about: newText }));
+    }
+
+    // Restore focus and selection
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + startTag.length, end + startTag.length);
+    }, 0);
+  };
+
+  const Toolbar = ({ id, blockId }: { id: string; blockId?: string }) => (
+    <div className="flex gap-2 mb-2">
+      <button
+        type="button"
+        onClick={() => applyTag(id, 'bold', blockId)}
+        className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest border border-white/10 transition-colors"
+      >
+        Bold
+      </button>
+      <button
+        type="button"
+        onClick={() => applyTag(id, 'main', blockId)}
+        className="px-3 py-1 rounded bg-main/20 hover:bg-main/30 text-[10px] font-bold uppercase tracking-widest border border-main/30 text-main transition-colors"
+      >
+        Main Color
+      </button>
+      <button
+        type="button"
+        onClick={() => applyTag(id, 'sub', blockId)}
+        className="px-3 py-1 rounded bg-sub/20 hover:bg-sub/30 text-[10px] font-bold uppercase tracking-widest border border-sub/30 text-sub transition-colors"
+      >
+        Sub Color
+      </button>
+    </div>
+  );
+
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="flex flex-col gap-12">
       {/* Basic Info Section */}
@@ -648,41 +765,14 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
               className="bg-black border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-white/40">클라이언트 (Client)</label>
-              <input
-                type="text"
-                value={formData.client || ''}
-                onChange={e => setFormData({ ...formData, client: e.target.value })}
-                className="bg-black border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-white/40">서비스 (Services)</label>
-              <input
-                type="text"
-                value={formData.services || ''}
-                onChange={e => setFormData({ ...formData, services: e.target.value })}
-                className="bg-black border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">Live Preview URL</label>
-            <input
-              type="text"
-              value={formData.liveUrl || ''}
-              onChange={e => setFormData({ ...formData, liveUrl: e.target.value })}
-              className="bg-black border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
-            />
-          </div>
         </div>
 
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">About the project</label>
+            <Toolbar id="project-about" />
             <textarea
+              id="project-about"
               rows={3}
               value={formData.about || ''}
               onChange={e => setFormData({ ...formData, about: e.target.value })}
@@ -801,12 +891,25 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={formData.visibleSections[block.sectionId] ?? true}
-                      onChange={() => toggleVisibility(block.sectionId)}
+                      checked={formData.visibleSections[block.sectionId!] ?? true}
+                      onChange={() => toggleVisibility(block.sectionId!)}
                       className="w-4 h-4 rounded border-white/10 bg-black text-main focus:ring-0"
                     />
                     <span className="text-xs font-bold uppercase tracking-widest text-white/40">Visible</span>
                   </label>
+                  {block.type === 'image' && block.content && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, mainImage: block.content })}
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        formData.mainImage === block.content
+                          ? 'bg-blue-500/20 text-blue-500 border border-blue-500/30'
+                          : 'bg-white/5 text-white/30 border border-white/10'
+                      }`}
+                    >
+                      {formData.mainImage === block.content ? 'Main Image' : 'Set as Main'}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeBlock(block.id)}
@@ -826,7 +929,9 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
                     onChange={e => updateBlock(block.id, { title: e.target.value })}
                     className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors font-bold"
                   />
+                  <Toolbar id={`block-content-${block.id}`} blockId={block.id} />
                   <textarea
+                    id={`block-content-${block.id}`}
                     placeholder="내용을 입력하세요"
                     rows={6}
                     value={block.content}
@@ -1016,19 +1121,10 @@ const ArchiveManager = ({ archive, onAdd, onUpdate, onDelete, accentColor, reord
                   <input
                     name="category"
                     type="text"
-                    list="archive-categories"
                     required
                     defaultValue={isAdding ? '' : archive.find(a => a.id === editingId)?.category}
                     className="bg-black border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
                   />
-                  <datalist id="archive-categories">
-                    <option value="Recruitment" />
-                    <option value="People Analytics" />
-                    <option value="C&B" />
-                    <option value="License" />
-                    <option value="Strategy" />
-                    <option value="Culture" />
-                  </datalist>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-white/40">제목</label>

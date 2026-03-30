@@ -24,6 +24,7 @@ export interface Project {
   tools?: string[];
   imageFilter?: 'none' | 'grayscale' | 'dark';
   images: string[]; // Keep this for gallery/thumbnails if needed, or move all to blocks
+  mainImage?: string; // Add mainImage field
 }
 
 export interface ArchiveItem {
@@ -39,6 +40,7 @@ export interface SiteConfig {
   slogan: string;
   identity: string;
   about: string;
+  aboutImages: string[];
   education: string[];
   experience: string[];
   careerHighlights: string[];
@@ -54,6 +56,7 @@ export interface SiteConfig {
     slogan: number;
     body: number;
     heading: number;
+    projectLineHeight?: number;
   };
   projectLabels: {
     problem: string;

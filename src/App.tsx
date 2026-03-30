@@ -3,7 +3,7 @@ import { PortfolioProvider } from './context/PortfolioContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Admin from './pages/Admin';
-import ProjectDetail from './pages/ProjectDetail';
+import ProjectPage from './pages/ProjectPage';
 
 export default function App() {
   return (
@@ -13,7 +13,7 @@ export default function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="admin" element={<Admin />} />
-            <Route path="project/:id" element={<ProjectDetail />} />
+            <Route path="project/:id" element={<ProjectPage />} />
           </Route>
         </Routes>
       </Router>

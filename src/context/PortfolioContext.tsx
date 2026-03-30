@@ -23,55 +23,10 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (saved) {
       const parsed = JSON.parse(saved);
       
-      // Migrate projects if needed
-      const migratedProjects = (parsed.projects || []).map((p: any) => {
-        if (!p.contentBlocks) {
-          const blocks: any[] = [];
-          if (p.problemStatement) blocks.push({ id: 'prob', type: 'text', title: 'Problem Statement', content: p.problemStatement, sectionId: 'problem' });
-          if (p.approach) blocks.push({ id: 'appr', type: 'text', title: 'Approach', content: p.approach, sectionId: 'approach' });
-          if (p.keyInsights) blocks.push({ id: 'ins', type: 'text', title: 'Key Insights', content: p.keyInsights, sectionId: 'insights' });
-          if (p.actionsImpact) blocks.push({ id: 'act', type: 'text', title: 'Actions & Impact', content: p.actionsImpact, sectionId: 'actions' });
-          if (p.contribution) blocks.push({ id: 'cont', type: 'text', title: 'Contribution', content: p.contribution, sectionId: 'contribution' });
-          if (p.thingsIDid) blocks.push({ id: 'things', type: 'text', title: 'Things I Did', content: p.thingsIDid, sectionId: 'things' });
-          
-          (p.images || []).forEach((img: string, idx: number) => {
-            blocks.push({ id: `img-${idx}`, type: 'image', title: `Project Image ${idx + 1}`, content: img, sectionId: `image-${idx}` });
-          });
-
-          return {
-            ...p,
-            contentBlocks: blocks,
-            visibleSections: blocks.reduce((acc, b) => ({ ...acc, [b.id]: true }), {}),
-            subtitle: p.subtitle || '',
-            client: p.client || '',
-            services: p.services || '',
-            liveUrl: p.liveUrl || '',
-            metrics: p.metrics || '',
-            imageFilter: p.imageFilter || 'none',
-            tools: p.tools || []
-          };
-        }
-        return p;
-      });
-
-      // Migrate archive if needed
-      const migratedArchive = (parsed.archive || []).map((a: any) => {
-        if (!a.details) {
-          return {
-            ...a,
-            category: a.category || 'Experience',
-            details: a.description ? a.description.split('\n').filter((s: string) => s.trim()) : []
-          };
-        }
-        return a;
-      });
-
       // Merge with initialData to ensure new fields are present
       return {
         ...initialData,
         ...parsed,
-        projects: migratedProjects,
-        archive: migratedArchive,
         config: {
           ...initialData.config,
           ...parsed.config,

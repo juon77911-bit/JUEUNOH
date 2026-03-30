@@ -6,6 +6,12 @@ export const initialData: PortfolioData = {
     slogan: "사람과 조직의 성장을 잇는 HR 전략가",
     identity: "데이터 기반의 의사결정과 인간 중심의 가치를 조화롭게 설계하는 HR 전문가입니다.",
     about: "10년 이상의 HR 실무 경험을 바탕으로, 조직의 비전과 구성원의 성장을 연결하는 최적의 시스템을 설계합니다. 단순한 관리(Administration)를 넘어 전략적 파트너십(Strategic Partnership)으로서의 HR을 지향합니다.",
+    aboutImages: [
+      "https://picsum.photos/seed/about1/800/1000",
+      "https://picsum.photos/seed/about2/800/1000",
+      "https://picsum.photos/seed/about3/800/1000",
+      "https://picsum.photos/seed/about4/800/1000"
+    ],
     education: [
       "서울대학교 경영대학원 인사조직 석사 (2021)",
       "연세대학교 심리학과 학사 (2015)"
@@ -31,7 +37,8 @@ export const initialData: PortfolioData = {
     fontSizes: {
       slogan: 48,
       body: 16,
-      heading: 64
+      heading: 64,
+      projectLineHeight: 1.7
     },
     projectLabels: {
       problem: "Problem Statement",
