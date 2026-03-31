@@ -4,7 +4,7 @@ import { Project, ArchiveItem, SiteConfig, ContentBlock } from '../types';
 import { Plus, Trash2, Edit2, Save, X, LayoutDashboard, Briefcase, History, Settings, ChevronUp, ChevronDown, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, googleProvider } from '../firebase';
-import { signInWithPopup, signOut } from 'firebase/auth';
+import { signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
 
 const Admin = () => {
   const { 
@@ -39,10 +39,20 @@ const Admin = () => {
   const handleGoogleLogin = async () => {
     try {
       setError('');
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
+      console.log('Attempting Google Login with popup...');
+      await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+      console.log('Login successful');
+    } catch (err: any) {
       console.error('Login failed:', err);
-      setError('구글 로그인에 실패했습니다.');
+      if (err.code === 'auth/unauthorized-domain') {
+        setError('현재 도메인이 Firebase에 승인되지 않았습니다. (auth/unauthorized-domain)');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('팝업이 차단되었습니다. 브라우저 설정을 확인해 주세요. (auth/popup-blocked)');
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        setError('로그인 팝업이 닫혔습니다.');
+      } else {
+        setError(`구글 로그인에 실패했습니다: ${err.code || err.message}`);
+      }
     }
   };
 
