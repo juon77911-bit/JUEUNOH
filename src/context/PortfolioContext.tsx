@@ -13,6 +13,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { OperationType, handleFirestoreError } from '../firebase';
 
 interface PortfolioContextType {
   data: PortfolioData;
@@ -69,10 +70,9 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }
           }
         }));
-      } else {
-        // Initialize if not exists
-        setDoc(doc(db, 'settings', 'config'), initialData.config);
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'settings/config');
     });
 
     // Listen to projects
@@ -83,14 +83,9 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
       if (projects.length > 0) {
         setData(prev => ({ ...prev, projects }));
-      } else {
-        // Initialize if empty
-        const batch = writeBatch(db);
-        initialData.projects.forEach(p => {
-          batch.set(doc(db, 'projects', p.id), p);
-        });
-        batch.commit();
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'projects');
     });
 
     // Listen to archive
@@ -101,14 +96,9 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
       if (archive.length > 0) {
         setData(prev => ({ ...prev, archive }));
-      } else {
-        // Initialize if empty
-        const batch = writeBatch(db);
-        initialData.archive.forEach(a => {
-          batch.set(doc(db, 'archive', a.id), a);
-        });
-        batch.commit();
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'archive');
     });
 
     return () => {
@@ -124,34 +114,38 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [data.config.accentColor, data.config.secondaryColor]);
 
   const updateConfig = async (config: SiteConfig) => {
+    const path = 'settings/config';
     try {
       await setDoc(doc(db, 'settings', 'config'), config);
     } catch (error) {
-      console.error('Failed to update config:', error);
+      handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
 
   const addProject = async (project: Project) => {
+    const path = `projects/${project.id}`;
     try {
       await setDoc(doc(db, 'projects', project.id), project);
     } catch (error) {
-      console.error('Failed to add project:', error);
+      handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
 
   const updateProject = async (project: Project) => {
+    const path = `projects/${project.id}`;
     try {
       await setDoc(doc(db, 'projects', project.id), project);
     } catch (error) {
-      console.error('Failed to update project:', error);
+      handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
 
   const deleteProject = async (id: string) => {
+    const path = `projects/${id}`;
     try {
       await deleteDoc(doc(db, 'projects', id));
     } catch (error) {
-      console.error('Failed to delete project:', error);
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   };
 
@@ -160,34 +154,41 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
     
-    const batch = writeBatch(db);
-    result.forEach((p: Project) => {
-      batch.set(doc(db, 'projects', p.id), p);
-    });
-    await batch.commit();
+    try {
+      const batch = writeBatch(db);
+      result.forEach((p: Project) => {
+        batch.set(doc(db, 'projects', p.id), p);
+      });
+      await batch.commit();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'projects (batch reorder)');
+    }
   };
 
   const addArchiveItem = async (item: ArchiveItem) => {
+    const path = `archive/${item.id}`;
     try {
       await setDoc(doc(db, 'archive', item.id), item);
     } catch (error) {
-      console.error('Failed to add archive item:', error);
+      handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
 
   const updateArchiveItem = async (item: ArchiveItem) => {
+    const path = `archive/${item.id}`;
     try {
       await setDoc(doc(db, 'archive', item.id), item);
     } catch (error) {
-      console.error('Failed to update archive item:', error);
+      handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
 
   const deleteArchiveItem = async (id: string) => {
+    const path = `archive/${id}`;
     try {
       await deleteDoc(doc(db, 'archive', id));
     } catch (error) {
-      console.error('Failed to delete archive item:', error);
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   };
 
@@ -196,11 +197,15 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
     
-    const batch = writeBatch(db);
-    result.forEach((a: ArchiveItem) => {
-      batch.set(doc(db, 'archive', a.id), a);
-    });
-    await batch.commit();
+    try {
+      const batch = writeBatch(db);
+      result.forEach((a: ArchiveItem) => {
+        batch.set(doc(db, 'archive', a.id), a);
+      });
+      await batch.commit();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'archive (batch reorder)');
+    }
   };
 
   return (
