@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: settings
+    // Document ID: config
+    //
+    // Collection: projects
+    // Document ID: {projectId}
+    //
+    // Collection: archive
+    // Document ID: {archiveId}
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "juon77911@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /settings/config {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /archive/{archiveId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
