@@ -57,6 +57,8 @@ export interface SiteConfig {
     body: number;
     heading: number;
     projectLineHeight?: number;
+    projectTitleTop?: number;
+    projectTitleBottom?: number;
   };
   projectLabels: {
     problem: string;

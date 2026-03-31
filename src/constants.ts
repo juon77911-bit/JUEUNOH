@@ -38,7 +38,9 @@ export const initialData: PortfolioData = {
       slogan: 48,
       body: 16,
       heading: 64,
-      projectLineHeight: 1.7
+      projectLineHeight: 1.7,
+      projectTitleTop: 72,
+      projectTitleBottom: 72
     },
     projectLabels: {
       problem: "Problem Statement",

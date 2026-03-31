@@ -6,6 +6,88 @@ import { motion, AnimatePresence } from 'motion/react';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
 
+const applyFormatting = (
+  textareaId: string, 
+  tag: 'bold' | 'main' | 'sub' | 'br', 
+  currentValue: string, 
+  onUpdate: (val: string) => void
+) => {
+  const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+  if (!textarea) return;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selectedText = currentValue.substring(start, end);
+  const beforeText = currentValue.substring(0, start);
+  const afterText = currentValue.substring(end);
+
+  let startTag = '';
+  let endTag = '';
+
+  if (tag === 'bold') {
+    startTag = '<strong>';
+    endTag = '</strong>';
+  } else if (tag === 'main') {
+    startTag = '<span class="text-main">';
+    endTag = '</span>';
+  } else if (tag === 'sub') {
+    startTag = '<span class="text-sub">';
+    endTag = '</span>';
+  } else if (tag === 'br') {
+    startTag = '<br />';
+    endTag = '';
+  }
+
+  const newText = beforeText + startTag + selectedText + endTag + afterText;
+  onUpdate(newText);
+
+  setTimeout(() => {
+    textarea.focus();
+    textarea.setSelectionRange(start + startTag.length, end + startTag.length);
+  }, 0);
+};
+
+const FormattingToolbar = ({ 
+  textareaId, 
+  currentValue, 
+  onUpdate 
+}: { 
+  textareaId: string; 
+  currentValue: string; 
+  onUpdate: (val: string) => void 
+}) => (
+  <div className="flex gap-2 mb-2">
+    <button
+      type="button"
+      onClick={() => applyFormatting(textareaId, 'bold', currentValue, onUpdate)}
+      className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest border border-white/10 transition-colors"
+    >
+      Bold
+    </button>
+    <button
+      type="button"
+      onClick={() => applyFormatting(textareaId, 'br', currentValue, onUpdate)}
+      className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest border border-white/10 transition-colors"
+    >
+      Line Break
+    </button>
+    <button
+      type="button"
+      onClick={() => applyFormatting(textareaId, 'main', currentValue, onUpdate)}
+      className="px-3 py-1 rounded bg-main/20 hover:bg-main/30 text-[10px] font-bold uppercase tracking-widest border border-main/30 text-main transition-colors"
+    >
+      Main Color
+    </button>
+    <button
+      type="button"
+      onClick={() => applyFormatting(textareaId, 'sub', currentValue, onUpdate)}
+      className="px-3 py-1 rounded bg-sub/20 hover:bg-sub/30 text-[10px] font-bold uppercase tracking-widest border border-sub/30 text-sub transition-colors"
+    >
+      Sub Color
+    </button>
+  </div>
+);
+
 const Admin = () => {
   const { 
     data, 
@@ -136,13 +218,16 @@ const Admin = () => {
         
         <div className="flex flex-col items-end gap-2">
           {!user ? (
-            <button
-              onClick={handleGoogleLogin}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm"
-            >
-              <LogIn size={16} />
-              Google로 인증 (데이터 저장 권한)
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <button
+                onClick={handleGoogleLogin}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm"
+              >
+                <LogIn size={16} />
+                Google로 인증 (데이터 저장 권한)
+              </button>
+              {error && <p className="text-red-500 text-[10px] font-bold">{error}</p>}
+            </div>
           ) : (
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2 text-sm">
@@ -344,6 +429,24 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
               className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
             />
           </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-white/40">프로젝트 상세 - 상단 타이틀 크기 (px)</label>
+            <input
+              type="number"
+              value={formData.fontSizes.projectTitleTop || 72}
+              onChange={e => setFormData({ ...formData, fontSizes: { ...formData.fontSizes, projectTitleTop: parseInt(e.target.value) } })}
+              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-white/40">프로젝트 상세 - 하단 타이틀 크기 (px)</label>
+            <input
+              type="number"
+              value={formData.fontSizes.projectTitleBottom || 72}
+              onChange={e => setFormData({ ...formData, fontSizes: { ...formData.fontSizes, projectTitleBottom: parseInt(e.target.value) } })}
+              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
+            />
+          </div>
         </div>
       </section>
 
@@ -352,29 +455,47 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
         <div className="grid gap-6">
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">ABOUT 섹션 설명</label>
-            <input
-              type="text"
+            <FormattingToolbar 
+              textareaId="section-desc-about" 
+              currentValue={formData.sectionDescriptions.about} 
+              onUpdate={(val) => setFormData({ ...formData, sectionDescriptions: { ...formData.sectionDescriptions, about: val } })} 
+            />
+            <textarea
+              id="section-desc-about"
+              rows={2}
               value={formData.sectionDescriptions.about}
               onChange={e => setFormData({ ...formData, sectionDescriptions: { ...formData.sectionDescriptions, about: e.target.value } })}
-              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
+              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors resize-none"
             />
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">PROJECTS 섹션 설명</label>
-            <input
-              type="text"
+            <FormattingToolbar 
+              textareaId="section-desc-projects" 
+              currentValue={formData.sectionDescriptions.projects} 
+              onUpdate={(val) => setFormData({ ...formData, sectionDescriptions: { ...formData.sectionDescriptions, projects: val } })} 
+            />
+            <textarea
+              id="section-desc-projects"
+              rows={2}
               value={formData.sectionDescriptions.projects}
               onChange={e => setFormData({ ...formData, sectionDescriptions: { ...formData.sectionDescriptions, projects: e.target.value } })}
-              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
+              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors resize-none"
             />
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">ARCHIVE 섹션 설명</label>
-            <input
-              type="text"
+            <FormattingToolbar 
+              textareaId="section-desc-archive" 
+              currentValue={formData.sectionDescriptions.archive} 
+              onUpdate={(val) => setFormData({ ...formData, sectionDescriptions: { ...formData.sectionDescriptions, archive: val } })} 
+            />
+            <textarea
+              id="section-desc-archive"
+              rows={2}
               value={formData.sectionDescriptions.archive}
               onChange={e => setFormData({ ...formData, sectionDescriptions: { ...formData.sectionDescriptions, archive: e.target.value } })}
-              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors"
+              className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors resize-none"
             />
           </div>
         </div>
@@ -384,7 +505,13 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
         <h3 className="text-xl font-bold border-l-4 pl-4 border-white/20">자기소개 상세</h3>
         <div className="flex flex-col gap-2">
           <label className="text-xs font-bold uppercase tracking-widest text-white/40">자기소개 요약 (Identity)</label>
+          <FormattingToolbar 
+            textareaId="config-identity" 
+            currentValue={formData.identity} 
+            onUpdate={(val) => setFormData({ ...formData, identity: val })} 
+          />
           <textarea
+            id="config-identity"
             rows={2}
             value={formData.identity}
             onChange={e => setFormData({ ...formData, identity: e.target.value })}
@@ -394,7 +521,13 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
 
         <div className="flex flex-col gap-2">
           <label className="text-xs font-bold uppercase tracking-widest text-white/40">상세 소개 (About)</label>
+          <FormattingToolbar 
+            textareaId="config-about" 
+            currentValue={formData.about} 
+            onUpdate={(val) => setFormData({ ...formData, about: val })} 
+          />
           <textarea
+            id="config-about"
             rows={4}
             value={formData.about}
             onChange={e => setFormData({ ...formData, about: e.target.value })}
@@ -459,7 +592,13 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
         <div className="grid md:grid-cols-2 gap-8">
           <div className="flex flex-col gap-4">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">학력 (Education)</label>
+            <FormattingToolbar 
+              textareaId="config-education" 
+              currentValue={(formData.education || []).join('\n')} 
+              onUpdate={(val) => setFormData({ ...formData, education: val.split('\n') })} 
+            />
             <textarea
+              id="config-education"
               rows={5}
               placeholder="한 줄에 하나씩 입력하세요"
               value={(formData.education || []).join('\n')}
@@ -469,7 +608,13 @@ const ConfigEditor = ({ config, onSave }: { config: SiteConfig; onSave: (c: Site
           </div>
           <div className="flex flex-col gap-4">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">경력 (Experience)</label>
+            <FormattingToolbar 
+              textareaId="config-experience" 
+              currentValue={(formData.experience || []).join('\n')} 
+              onUpdate={(val) => setFormData({ ...formData, experience: val.split('\n') })} 
+            />
             <textarea
+              id="config-experience"
               rows={5}
               placeholder="한 줄에 하나씩 입력하세요"
               value={(formData.experience || []).join('\n')}
@@ -749,78 +894,6 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
     setFormData({ ...formData, contentBlocks: result });
   };
 
-  const applyTag = (textareaId: string, tag: string, blockId?: string) => {
-    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selectedText = text.substring(start, end);
-    const beforeText = text.substring(0, start);
-    const afterText = text.substring(end);
-
-    let startTag = '';
-    let endTag = '';
-
-    if (tag === 'bold') {
-      startTag = '<strong>';
-      endTag = '</strong>';
-    } else if (tag === 'main') {
-      startTag = '<span class="text-main">';
-      endTag = '</span>';
-    } else if (tag === 'sub') {
-      startTag = '<span class="text-sub">';
-      endTag = '</span>';
-    }
-
-    const newText = beforeText + startTag + selectedText + endTag + afterText;
-    
-    if (blockId) {
-      setFormData(prev => ({
-        ...prev,
-        contentBlocks: prev.contentBlocks.map(b => 
-          b.id === blockId ? { ...b, content: newText } : b
-        )
-      }));
-    } else {
-      // For main project description
-      setFormData(prev => ({ ...prev, about: newText }));
-    }
-
-    // Restore focus and selection
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + startTag.length, end + startTag.length);
-    }, 0);
-  };
-
-  const Toolbar = ({ id, blockId }: { id: string; blockId?: string }) => (
-    <div className="flex gap-2 mb-2">
-      <button
-        type="button"
-        onClick={() => applyTag(id, 'bold', blockId)}
-        className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest border border-white/10 transition-colors"
-      >
-        Bold
-      </button>
-      <button
-        type="button"
-        onClick={() => applyTag(id, 'main', blockId)}
-        className="px-3 py-1 rounded bg-main/20 hover:bg-main/30 text-[10px] font-bold uppercase tracking-widest border border-main/30 text-main transition-colors"
-      >
-        Main Color
-      </button>
-      <button
-        type="button"
-        onClick={() => applyTag(id, 'sub', blockId)}
-        className="px-3 py-1 rounded bg-sub/20 hover:bg-sub/30 text-[10px] font-bold uppercase tracking-widest border border-sub/30 text-sub transition-colors"
-      >
-        Sub Color
-      </button>
-    </div>
-  );
-
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="flex flex-col gap-12">
       {/* Basic Info Section */}
@@ -860,7 +933,11 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">About the project</label>
-            <Toolbar id="project-about" />
+            <FormattingToolbar 
+              textareaId="project-about" 
+              currentValue={formData.about || ''} 
+              onUpdate={(val) => setFormData({ ...formData, about: val })} 
+            />
             <textarea
               id="project-about"
               rows={3}
@@ -1019,7 +1096,11 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
                     onChange={e => updateBlock(block.id, { title: e.target.value })}
                     className="bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-white transition-colors font-bold"
                   />
-                  <Toolbar id={`block-content-${block.id}`} blockId={block.id} />
+                  <FormattingToolbar 
+                    textareaId={`block-content-${block.id}`} 
+                    currentValue={block.content} 
+                    onUpdate={(val) => updateBlock(block.id, { content: val })} 
+                  />
                   <textarea
                     id={`block-content-${block.id}`}
                     placeholder="내용을 입력하세요"
@@ -1228,7 +1309,13 @@ const ArchiveManager = ({ archive, onAdd, onUpdate, onDelete, accentColor, reord
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-white/40">상세 설명 (한 줄에 하나씩)</label>
+                  <FormattingToolbar 
+                    textareaId="archive-details" 
+                    currentValue={detailsValue} 
+                    onUpdate={setDetailsValue} 
+                  />
                   <textarea
+                    id="archive-details"
                     rows={5}
                     required
                     value={detailsValue}

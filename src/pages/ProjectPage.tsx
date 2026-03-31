@@ -127,13 +127,17 @@ const ProjectPage = () => {
               Return to Index
             </button>
             <div className="flex flex-col gap-6">
-              <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none text-white">
+              <h1 
+                className="font-black tracking-tighter leading-none text-white"
+                style={{ fontSize: data.config.fontSizes.projectTitleTop ? `${data.config.fontSizes.projectTitleTop}px` : '72px' }}
+              >
                 {project.title}
               </h1>
               <div className="flex flex-col gap-2">
-                <p className="text-sm md:text-[16px] text-[#A0A0A0] leading-[1.8] max-w-2xl font-medium">
-                  {project.about || project.description || project.subtitle}
-                </p>
+                <div 
+                  className="text-sm md:text-[16px] text-[#A0A0A0] leading-[1.8] max-w-2xl font-medium pre-wrap"
+                  dangerouslySetInnerHTML={{ __html: project.about || project.description || project.subtitle || '' }}
+                />
               </div>
             </div>
           </div>
@@ -180,7 +184,7 @@ const ProjectPage = () => {
                         <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-widest text-white">{block.title}</h2>
                       </div>
                     )}
-                    <div className="text-[17px] text-[#DEDEDE] leading-[9px] font-normal pre-wrap" style={{ wordBreak: 'keep-all' }}>
+                    <div className="text-[17px] text-[#DEDEDE] leading-relaxed font-normal pre-wrap" style={{ wordBreak: 'keep-all' }}>
                       {renderText(block.content)}
                     </div>
                   </div>
@@ -220,7 +224,10 @@ const ProjectPage = () => {
             
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
               <div className="flex flex-col gap-6 text-center md:text-left">
-                <h3 className="text-4xl md:text-7xl font-black tracking-tighter leading-none group-hover:text-[#00E5FF] transition-colors duration-500">
+                <h3 
+                  className="font-black tracking-tighter leading-none group-hover:text-[#00E5FF] transition-colors duration-500"
+                  style={{ fontSize: data.config.fontSizes.projectTitleBottom ? `${data.config.fontSizes.projectTitleBottom}px` : '72px' }}
+                >
                   {nextProject.title}
                 </h3>
                 <p className="text-lg md:text-xl text-white/40 font-medium max-w-md">
@@ -234,14 +241,6 @@ const ProjectPage = () => {
             </div>
           </Link>
 
-          <div className="mt-32 flex flex-col md:flex-row justify-between items-center gap-8 pt-12 border-t border-white/5">
-            <Link to="/" className="text-2xl font-black tracking-tighter hover:text-[#00E5FF] transition-colors">Meelo</Link>
-            <div className="flex items-center gap-12 text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">
-              <Link to="/" className="hover:text-white transition-colors">About</Link>
-              <Link to="/" className="hover:text-white transition-colors">Contact</Link>
-              <Link to="/" className="hover:text-white transition-colors">Portfolio</Link>
-            </div>
-          </div>
         </div>
       </footer>
     </div>

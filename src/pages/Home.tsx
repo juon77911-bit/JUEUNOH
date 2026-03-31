@@ -94,6 +94,11 @@ const Home = () => {
     visible: { opacity: 1, y: 0 }
   };
 
+  const renderHTML = (text: string) => {
+    if (!text) return null;
+    return <span dangerouslySetInnerHTML={{ __html: text }} />;
+  };
+
   return (
     <div 
       className="flex flex-col gap-48 pb-48 relative overflow-hidden"
@@ -192,7 +197,7 @@ const Home = () => {
               <p 
                 className="font-medium tracking-tight max-w-3xl leading-[1.8] text-sub opacity-90 drop-shadow-[0_0_12px_var(--sub-color)] md:text-[20px] text-[16px]"
               >
-                {config.identity}
+                {renderHTML(config.identity)}
               </p>
               <div className="w-px h-12 bg-sub/50 shadow-[0_0_15px_var(--sub-color)]" />
             </motion.div>
@@ -297,12 +302,12 @@ const Home = () => {
                   About Me
                 </h2>
                 <div className="flex flex-col gap-4">
-                  <p className="text-white/40 text-lg leading-[1.8] pre-wrap">{config.sectionDescriptions?.about}</p>
+                  <p className="text-white/40 text-lg leading-[1.8] pre-wrap">{renderHTML(config.sectionDescriptions?.about)}</p>
                   <p 
                     className="text-[#DEDEDE] leading-[1.8] font-normal pre-wrap"
                     style={{ fontSize: config.fontSizes?.body ? `${config.fontSizes.body + 2}px` : '18px' }}
                   >
-                    {config.about}
+                    {renderHTML(config.about)}
                   </p>
                 </div>
               </div>
@@ -327,7 +332,7 @@ const Home = () => {
                 {(config.experience || []).map((exp, i) => (
                   <li key={i} className="text-[17px] leading-[1.8] text-[#DEDEDE] flex items-center gap-3 font-medium">
                     <span className="w-1 h-1 rounded-full bg-sub/40" />
-                    {exp}
+                    {renderHTML(exp)}
                   </li>
                 ))}
               </ul>
@@ -341,7 +346,7 @@ const Home = () => {
                 {(config.education || []).map((edu, i) => (
                   <li key={i} className="text-[17px] leading-[1.8] text-[#DEDEDE] flex items-center gap-3 font-medium">
                     <span className="w-1 h-1 rounded-full bg-sub/40" />
-                    {edu}
+                    {renderHTML(edu)}
                   </li>
                 ))}
               </ul>
@@ -380,7 +385,7 @@ const Home = () => {
           <h2 
             className="font-bold tracking-[-0.03em] leading-tight md:text-[56px] text-[32px] max-w-3xl"
           >
-            {config.sectionDescriptions?.projects || 'Check out some of our awesome projects with creative ideas.'}
+            {renderHTML(config.sectionDescriptions?.projects) || 'Check out some of our awesome projects with creative ideas.'}
           </h2>
         </motion.header>
 
@@ -457,7 +462,7 @@ const Home = () => {
           >
             Career Archive
           </h2>
-          <p className="text-white/40 text-lg leading-[1.8] pre-wrap max-w-3xl">{config.sectionDescriptions?.archive}</p>
+          <p className="text-white/40 text-lg leading-[1.8] pre-wrap max-w-3xl">{renderHTML(config.sectionDescriptions?.archive)}</p>
         </motion.header>
 
         <div className="flex flex-col gap-16 relative">
@@ -494,7 +499,7 @@ const Home = () => {
                   {(item.details || []).map((detail, i) => (
                     <li key={i} className="flex items-start gap-4 text-white/40 group-hover:text-white/60 transition-colors leading-relaxed">
                       <span className="mt-2.5 w-1.5 h-1.5 rounded-full bg-white/10 group-hover:bg-main transition-colors shrink-0" />
-                      <span className="text-lg font-light">{detail}</span>
+                      <span className="text-lg font-light">{renderHTML(detail)}</span>
                     </li>
                   ))}
                 </ul>
