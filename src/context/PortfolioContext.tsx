@@ -76,7 +76,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     // Listen to projects
-    const unsubProjects = onSnapshot(query(collection(db, 'projects'), orderBy('id')), (querySnap) => {
+    const unsubProjects = onSnapshot(query(collection(db, 'projects'), orderBy('order', 'asc')), (querySnap) => {
       const projects: Project[] = [];
       querySnap.forEach((doc) => {
         projects.push(doc.data() as Project);
@@ -89,7 +89,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     // Listen to archive
-    const unsubArchive = onSnapshot(query(collection(db, 'archive'), orderBy('id')), (querySnap) => {
+    const unsubArchive = onSnapshot(query(collection(db, 'archive'), orderBy('order', 'asc')), (querySnap) => {
       const archive: ArchiveItem[] = [];
       querySnap.forEach((doc) => {
         archive.push(doc.data() as ArchiveItem);
@@ -125,7 +125,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addProject = async (project: Project) => {
     const path = `projects/${project.id}`;
     try {
-      await setDoc(doc(db, 'projects', project.id), project);
+      const newProject = { ...project, order: data.projects.length };
+      await setDoc(doc(db, 'projects', project.id), newProject);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
@@ -154,9 +155,12 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
     
+    // Update order field for all projects
+    const updatedProjects = result.map((p: Project, index) => ({ ...p, order: index }));
+    
     try {
       const batch = writeBatch(db);
-      result.forEach((p: Project) => {
+      updatedProjects.forEach((p: Project) => {
         batch.set(doc(db, 'projects', p.id), p);
       });
       await batch.commit();
@@ -168,7 +172,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addArchiveItem = async (item: ArchiveItem) => {
     const path = `archive/${item.id}`;
     try {
-      await setDoc(doc(db, 'archive', item.id), item);
+      const newItem = { ...item, order: data.archive.length };
+      await setDoc(doc(db, 'archive', item.id), newItem);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
@@ -197,9 +202,12 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
     
+    // Update order field for all items
+    const updatedArchive = result.map((item: ArchiveItem, index) => ({ ...item, order: index }));
+    
     try {
       const batch = writeBatch(db);
-      result.forEach((a: ArchiveItem) => {
+      updatedArchive.forEach((a: ArchiveItem) => {
         batch.set(doc(db, 'archive', a.id), a);
       });
       await batch.commit();

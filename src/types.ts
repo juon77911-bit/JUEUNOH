@@ -25,6 +25,7 @@ export interface Project {
   imageFilter?: 'none' | 'grayscale' | 'dark';
   images: string[]; // Keep this for gallery/thumbnails if needed, or move all to blocks
   mainImage?: string; // Add mainImage field
+  order: number;
 }
 
 export interface ArchiveItem {
@@ -33,6 +34,7 @@ export interface ArchiveItem {
   category?: string;
   title: string;
   details: string[];
+  order: number;
 }
 
 export interface SiteConfig {

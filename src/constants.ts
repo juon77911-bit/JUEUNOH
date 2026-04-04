@@ -80,7 +80,8 @@ export const initialData: PortfolioData = {
         "https://picsum.photos/seed/hr1/1200/800",
         "https://picsum.photos/seed/hr2/1200/800",
         "https://picsum.photos/seed/hr3/1200/800"
-      ]
+      ],
+      order: 0
     },
     {
       id: "2",
@@ -104,7 +105,8 @@ export const initialData: PortfolioData = {
       images: [
         "https://picsum.photos/seed/recruit1/1200/800",
         "https://picsum.photos/seed/recruit2/1200/800"
-      ]
+      ],
+      order: 1
     },
     {
       id: "3",
@@ -128,16 +130,17 @@ export const initialData: PortfolioData = {
       images: [
         "https://picsum.photos/seed/culture1/1200/800",
         "https://picsum.photos/seed/culture2/1200/800"
-      ]
+      ],
+      order: 2
     }
   ],
   archive: [
-    { id: "a1", year: "2025", category: "인력 계획", title: "2025 인력 계획 수립", details: ["2025 인력 계획 수립", "경력 채용 (Tech/Staff)", "ATS/OCC/온보딩 시스템 개선 및 유지보수"] },
-    { id: "a2", year: "2024", category: "채용 기획", title: "채용 기획 및 운영", details: ["팀네이버 채용 및 인력 증감 현황 관리", "공정채용 우수 기업 어워즈 응모 자료 기획", "링크드인 콘텐츠 및 플랫폼 관리", "효율적인 T/O 승인", "한국 경영자총협회 회장상 수상", "링크드인 공식채널 팔로워 16,540명 추가 확보"] },
-    { id: "a3", year: "2023", category: "문화 진단", title: "기업문화 적합도 검사", details: ["기업문화적합도 검사 유효성 분석", "팀네이버 신입공채 전형 설계 및 운영 (디자인/마케팅)", "쇼핑 부문 조직장 대상 AHP 조사 후 핵심 Workstyle 키워드 도출", "기업문화적합도 검사 기반 BEI 인터뷰 문항 설계 (쇼핑 부문 파일럿 도입)", "디자인/마케팅 직군 신입사원 13명 선발 완료"] },
-    { id: "a4", year: "2022", category: "신입/경력 채용", title: "채용 릴레이션", details: ["경력 채용 (Design/S&B/Staff)", "디자인 신입사원 선발 프로그램 (FFWD22) 전형 설계 및 운영", "디자인 산학연계 선발 프로그램 설계", "2580 챗봇 채용 파트 FAQ 설계", "경력사원 47명 선발 완료", "디자인 직군 신입사원 8명 선발 완료", "네이버 디자인 - KAIST 산업디자인학과, 서울대 디자인학부 간 MOU 체결", "채용 관련 문의 리소스 감소 (3개월 채용 관련 FAQ 조회 합계 : 2,293회)"] },
-    { id: "a5", year: "2021", category: "신입/경력 채용", title: "채용 릴레이션", details: ["디자인 신입사원 선발 프로그램 (FFWD21) 전형 설계 및 운영", "경력 채용 (Design/S&B/Staff)", "디자인 직군 신입사원 0명 선발 완료", "유효 지원자 확대 위한 포지션별 영입 경로"] },
-    { id: "a6", year: "2020", category: "채용 홍보", title: "채용 홍보 브로셔", details: ["코로나 19 관련 긴급 비대면 입사 전환", "네이버 채용 홍보 브로셔 기획/제작", "연세대 전기전자공학부 - Clova CIC 산학 협력 프로그램 운영", "국문/영문 채용 홍보 브로셔 발행 (30p 내외, 각종 공식 릴레이션 행사 활용)", "연세대 전기전자공학부 재학생 300여 명 대상 채용 설명회 기획 (채용 연계 2명)"] },
-    { id: "a7", year: "2019", category: "온보딩", title: "입사 ('19.09)", details: ["신규입사자 온보딩 - OT 자료 리뉴얼", "릴레이션 프로그램 (HACKDAY/KAIST잡페어/ICCV) 지원"] }
+    { id: "a1", year: "2025", category: "인력 계획", title: "2025 인력 계획 수립", details: ["2025 인력 계획 수립", "경력 채용 (Tech/Staff)", "ATS/OCC/온보딩 시스템 개선 및 유지보수"], order: 0 },
+    { id: "a2", year: "2024", category: "채용 기획", title: "채용 기획 및 운영", details: ["팀네이버 채용 및 인력 증감 현황 관리", "공정채용 우수 기업 어워즈 응모 자료 기획", "링크드인 콘텐츠 및 플랫폼 관리", "효율적인 T/O 승인", "한국 경영자총협회 회장상 수상", "링크드인 공식채널 팔로워 16,540명 추가 확보"], order: 1 },
+    { id: "a3", year: "2023", category: "문화 진단", title: "기업문화 적합도 검사", details: ["기업문화적합도 검사 유효성 분석", "팀네이버 신입공채 전형 설계 및 운영 (디자인/마케팅)", "쇼핑 부문 조직장 대상 AHP 조사 후 핵심 Workstyle 키워드 도출", "기업문화적합도 검사 기반 BEI 인터뷰 문항 설계 (쇼핑 부문 파일럿 도입)", "디자인/마케팅 직군 신입사원 13명 선발 완료"], order: 2 },
+    { id: "a4", year: "2022", category: "신입/경력 채용", title: "채용 릴레이션", details: ["경력 채용 (Design/S&B/Staff)", "디자인 신입사원 선발 프로그램 (FFWD22) 전형 설계 및 운영", "디자인 산학연계 선발 프로그램 설계", "2580 챗봇 채용 파트 FAQ 설계", "경력사원 47명 선발 완료", "디자인 직군 신입사원 8명 선발 완료", "네이버 디자인 - KAIST 산업디자인학과, 서울대 디자인학부 간 MOU 체결", "채용 관련 문의 리소스 감소 (3개월 채용 관련 FAQ 조회 합계 : 2,293회)"], order: 3 },
+    { id: "a5", year: "2021", category: "신입/경력 채용", title: "채용 릴레이션", details: ["디자인 신입사원 선발 프로그램 (FFWD21) 전형 설계 및 운영", "경력 채용 (Design/S&B/Staff)", "디자인 직군 신입사원 0명 선발 완료", "유효 지원자 확대 위한 포지션별 영입 경로"], order: 4 },
+    { id: "a6", year: "2020", category: "채용 홍보", title: "채용 홍보 브로셔", details: ["코로나 19 관련 긴급 비대면 입사 전환", "네이버 채용 홍보 브로셔 기획/제작", "연세대 전기전자공학부 - Clova CIC 산학 협력 프로그램 운영", "국문/영문 채용 홍보 브로셔 발행 (30p 내외, 각종 공식 릴레이션 행사 활용)", "연세대 전기전자공학부 재학생 300여 명 대상 채용 설명회 기획 (채용 연계 2명)"], order: 5 },
+    { id: "a7", year: "2019", category: "온보딩", title: "입사 ('19.09)", details: ["신규입사자 온보딩 - OT 자료 리뉴얼", "릴레이션 프로그램 (HACKDAY/KAIST잡페어/ICCV) 지원"], order: 6 }
   ]
 };

@@ -718,7 +718,8 @@ const ProjectManager = ({ projects, onAdd, onUpdate, onDelete, accentColor, reor
     visibleSections: {
       details: true,
       things: true
-    }
+    },
+    order: projects.length
   };
 
   return (
@@ -794,9 +795,9 @@ const ProjectManager = ({ projects, onAdd, onUpdate, onDelete, accentColor, reor
               </button>
               <ProjectForm
                 project={isAdding ? emptyProject : projects.find(p => p.id === editingId)!}
-                onSave={(p) => {
-                  if (isAdding) onAdd(p);
-                  else onUpdate(p);
+                onSave={async (p) => {
+                  if (isAdding) await onAdd(p);
+                  else await onUpdate(p);
                   setIsAdding(false);
                   setEditingId(null);
                 }}
@@ -820,22 +821,48 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result as string;
-        if (blockId) {
-          // Upload to specific block
-          setFormData(prev => ({
-            ...prev,
-            contentBlocks: prev.contentBlocks.map(b => 
-              b.id === blockId ? { ...b, content: base64String } : b
-            )
-          }));
-        } else {
-          // Upload to main images
-          setFormData(prev => ({
-            ...prev,
-            images: [...prev.images, base64String].slice(0, 5)
-          }));
-        }
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height *= maxDim / width;
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width *= maxDim / height;
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const base64String = canvas.toDataURL('image/jpeg', 0.7);
+
+          if (blockId) {
+            // Upload to specific block
+            setFormData(prev => ({
+              ...prev,
+              contentBlocks: prev.contentBlocks.map(b => 
+                b.id === blockId ? { ...b, content: base64String } : b
+              )
+            }));
+          } else {
+            // Upload to main images
+            setFormData(prev => ({
+              ...prev,
+              images: [...prev.images, base64String].slice(0, 5)
+            }));
+          }
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     });
@@ -894,8 +921,20 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
     setFormData({ ...formData, contentBlocks: result });
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      await onSave(formData);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="flex flex-col gap-12">
+    <form onSubmit={handleSave} className="flex flex-col gap-12">
       {/* Basic Info Section */}
       <div className="grid md:grid-cols-2 gap-8">
         <div className="flex flex-col gap-6">
@@ -1146,10 +1185,11 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
 
       <button
         type="submit"
-        className="px-8 py-5 rounded-full text-black font-bold hover:scale-105 transition-transform text-lg"
+        disabled={isSaving}
+        className="px-8 py-5 rounded-full text-black font-bold hover:scale-105 transition-transform text-lg disabled:opacity-50 disabled:scale-100"
         style={{ backgroundColor: accentColor }}
       >
-        프로젝트 저장하기
+        {isSaving ? '저장 중...' : '프로젝트 저장하기'}
       </button>
     </form>
   );
@@ -1168,12 +1208,15 @@ const ArchiveManager = ({ archive, onAdd, onUpdate, onDelete, accentColor, reord
   const [isAdding, setIsAdding] = useState(false);
   const [detailsValue, setDetailsValue] = useState('');
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const emptyItem: ArchiveItem = {
     id: Math.random().toString(36).substr(2, 9),
     year: '',
     category: '',
     title: '',
-    details: []
+    details: [],
+    order: 0
   };
 
   return (
@@ -1258,21 +1301,27 @@ const ArchiveManager = ({ archive, onAdd, onUpdate, onDelete, accentColor, reord
                 <X size={24} />
               </button>
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  const form = e.target as any;
-                  const newItem: ArchiveItem = {
-                    id: isAdding ? Math.random().toString(36).substr(2, 9) : editingId!,
-                    year: form.year.value,
-                    category: form.category.value,
-                    title: form.title.value,
-                    details: detailsValue.split('\n').filter(d => d.trim())
-                  };
-                  if (isAdding) onAdd(newItem);
-                  else onUpdate(newItem);
-                  setIsAdding(false);
-                  setEditingId(null);
-                  setDetailsValue('');
+                  setIsSaving(true);
+                  try {
+                    const form = e.target as any;
+                    const newItem: ArchiveItem = {
+                      id: isAdding ? Math.random().toString(36).substr(2, 9) : editingId!,
+                      year: form.year.value,
+                      category: form.category.value,
+                      title: form.title.value,
+                      details: detailsValue.split('\n').filter(d => d.trim()),
+                      order: isAdding ? archive.length : archive.find(a => a.id === editingId)?.order || 0
+                    };
+                    if (isAdding) await onAdd(newItem);
+                    else await onUpdate(newItem);
+                    setIsAdding(false);
+                    setEditingId(null);
+                    setDetailsValue('');
+                  } finally {
+                    setIsSaving(false);
+                  }
                 }}
                 className="flex flex-col gap-6"
               >
@@ -1326,10 +1375,11 @@ const ArchiveManager = ({ archive, onAdd, onUpdate, onDelete, accentColor, reord
                 </div>
                 <button
                   type="submit"
-                  className="mt-4 px-8 py-4 rounded-full text-black font-bold hover:scale-105 transition-transform"
+                  disabled={isSaving}
+                  className="mt-4 px-8 py-4 rounded-full text-black font-bold hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100"
                   style={{ backgroundColor: accentColor }}
                 >
-                  항목 저장하기
+                  {isSaving ? '저장 중...' : '항목 저장하기'}
                 </button>
               </form>
             </motion.div>
