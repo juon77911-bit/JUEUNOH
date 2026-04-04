@@ -76,28 +76,42 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     // Listen to projects
-    const unsubProjects = onSnapshot(query(collection(db, 'projects'), orderBy('order', 'asc')), (querySnap) => {
+    const unsubProjects = onSnapshot(collection(db, 'projects'), (querySnap) => {
+      console.log('Projects snapshot received. Size:', querySnap.size);
       const projects: Project[] = [];
       querySnap.forEach((doc) => {
-        projects.push(doc.data() as Project);
+        const data = doc.data() as Project;
+        console.log('Project doc:', doc.id, data.title);
+        // Ensure order exists for backward compatibility
+        projects.push({ ...data, order: data.order ?? 0 });
       });
-      if (projects.length > 0) {
-        setData(prev => ({ ...prev, projects }));
-      }
+      
+      // Sort manually in memory if order is missing in some docs
+      projects.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      setData(prev => ({ ...prev, projects }));
     }, (error) => {
+      console.error('Projects snapshot error:', error);
       handleFirestoreError(error, OperationType.LIST, 'projects');
     });
 
     // Listen to archive
-    const unsubArchive = onSnapshot(query(collection(db, 'archive'), orderBy('order', 'asc')), (querySnap) => {
+    const unsubArchive = onSnapshot(collection(db, 'archive'), (querySnap) => {
+      console.log('Archive snapshot received. Size:', querySnap.size);
       const archive: ArchiveItem[] = [];
       querySnap.forEach((doc) => {
-        archive.push(doc.data() as ArchiveItem);
+        const data = doc.data() as ArchiveItem;
+        console.log('Archive doc:', doc.id, data.title);
+        // Ensure order exists for backward compatibility
+        archive.push({ ...data, order: data.order ?? 0 });
       });
-      if (archive.length > 0) {
-        setData(prev => ({ ...prev, archive }));
-      }
+
+      // Sort manually in memory
+      archive.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      setData(prev => ({ ...prev, archive }));
     }, (error) => {
+      console.error('Archive snapshot error:', error);
       handleFirestoreError(error, OperationType.LIST, 'archive');
     });
 

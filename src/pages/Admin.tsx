@@ -282,6 +282,25 @@ const Admin = () => {
       </div>
 
       <div className="mt-8">
+        {/* Debug Section */}
+        <div className="mb-8 p-4 rounded-2xl bg-zinc-900/50 border border-white/5 text-[10px] font-mono text-white/30">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-bold uppercase tracking-widest">Database Debug Info</span>
+            <button 
+              onClick={() => console.log('Current Data:', data)}
+              className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              Log to Console
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>DB ID: <span className="text-white/60">{auth.app.options.projectId}</span></div>
+            <div>Projects: <span className="text-white/60">{data.projects.length}</span></div>
+            <div>Archive: <span className="text-white/60">{data.archive.length}</span></div>
+            <div>Auth: <span className={user ? "text-green-400" : "text-red-400"}>{user ? "Authenticated" : "Not Authenticated"}</span></div>
+          </div>
+        </div>
+
         <AnimatePresence mode="wait">
           {activeTab === 'config' && <ConfigEditor key="config" config={data.config} onSave={updateConfig} />}
           {activeTab === 'projects' && (
@@ -796,10 +815,16 @@ const ProjectManager = ({ projects, onAdd, onUpdate, onDelete, accentColor, reor
               <ProjectForm
                 project={isAdding ? emptyProject : projects.find(p => p.id === editingId)!}
                 onSave={async (p) => {
-                  if (isAdding) await onAdd(p);
-                  else await onUpdate(p);
-                  setIsAdding(false);
-                  setEditingId(null);
+                  try {
+                    if (isAdding) await onAdd(p);
+                    else await onUpdate(p);
+                    setIsAdding(false);
+                    setEditingId(null);
+                    alert('저장되었습니다.');
+                  } catch (err: any) {
+                    console.error('Save failed:', err);
+                    alert(`저장에 실패했습니다: ${err.message}`);
+                  }
                 }}
                 accentColor={accentColor}
               />
@@ -818,7 +843,14 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
     const files = e.target.files;
     if (!files) return;
 
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit for raw file
+
     Array.from(files).forEach((file: File) => {
+      if (file.size > MAX_FILE_SIZE) {
+        alert(`파일이 너무 큽니다: ${file.name} (최대 5MB)`);
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         const img = new Image();
@@ -925,9 +957,30 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Calculate total data size (approximate)
+    const dataStr = JSON.stringify(formData);
+    const sizeInBytes = new Blob([dataStr]).size;
+    const sizeInMB = sizeInBytes / (1024 * 1024);
+
+    if (sizeInMB > 0.9) {
+      alert(`데이터 용량이 너무 큽니다 (${sizeInMB.toFixed(2)}MB / 최대 1MB). 이미지를 줄이거나 텍스트를 정리해 주세요.`);
+      return;
+    }
+
     setIsSaving(true);
     try {
       await onSave(formData);
+    } catch (err: any) {
+      console.error('Project save error:', err);
+      // Detailed error reporting
+      let message = '저장 중 오류가 발생했습니다.';
+      if (err.message?.includes('quota')) message = 'Firestore 할당량이 초과되었습니다. (무료 티어 제한)';
+      else if (err.message?.includes('permission')) message = '저장 권한이 없습니다. 관리자 계정으로 로그인했는지 확인해 주세요.';
+      else if (err.message?.includes('too large')) message = '데이터 크기가 너무 커서 저장할 수 없습니다. 이미지를 더 압축하거나 개수를 줄여주세요.';
+      else message = `오류 발생: ${err.message || '알 수 없는 오류'}`;
+      
+      alert(message);
     } finally {
       setIsSaving(false);
     }
@@ -1319,6 +1372,10 @@ const ArchiveManager = ({ archive, onAdd, onUpdate, onDelete, accentColor, reord
                     setIsAdding(false);
                     setEditingId(null);
                     setDetailsValue('');
+                    alert('저장되었습니다.');
+                  } catch (err: any) {
+                    console.error('Save failed:', err);
+                    alert(`저장에 실패했습니다: ${err.message}`);
                   } finally {
                     setIsSaving(false);
                   }
