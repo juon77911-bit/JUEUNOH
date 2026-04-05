@@ -99,3 +99,77 @@
   background-size: 20px 20px;
   transform: translate(var(--grid-x, 0px), var(--grid-y, 0px));
 }
+
+/* Print Styles for PDF Export */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide UI elements not needed in PDF */
+  nav, 
+  .scroll-hint, 
+  button, 
+  .admin-only,
+  footer,
+  .no-print,
+  .bg-noise,
+  .bg-grid {
+    display: none !important;
+  }
+
+  /* Ensure content takes full width */
+  .max-w-7xl, .max-w-4xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Prevent breaking images/sections across pages */
+  section, 
+  .project-card, 
+  img, 
+  .content-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Force new page for major sections if needed */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Adjust text colors for readability on white paper */
+  .text-white\/50, .text-white\/40, .text-white\/30, .text-white\/60 {
+    color: #333 !important;
+  }
+
+  h1, h2, h3, h4 {
+    color: black !important;
+    margin-top: 1rem !important;
+  }
+
+  /* Ensure grid layouts work in print */
+  .grid {
+    display: block !important;
+  }
+  
+  .grid > div {
+    margin-bottom: 2rem !important;
+  }
+
+  /* Specific adjustments for Home page sections */
+  #projects, #about, #archive, #contact {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+}

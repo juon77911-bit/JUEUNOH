@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { Project, ArchiveItem, SiteConfig, ContentBlock } from '../types';
-import { Plus, Trash2, Edit2, Save, X, LayoutDashboard, Briefcase, History, Settings, ChevronUp, ChevronDown, LogIn } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, LayoutDashboard, Briefcase, History, Settings, ChevronUp, ChevronDown, LogIn, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
@@ -216,8 +216,19 @@ const Admin = () => {
           <p className="text-white/50">포트폴리오의 모든 내용을 실시간으로 관리하세요.</p>
         </div>
         
-        <div className="flex flex-col items-end gap-2">
-          {!user ? (
+        <div className="flex flex-col items-end gap-6">
+          <div className="no-print">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm font-bold uppercase tracking-widest group"
+            >
+              <FileText size={16} className="text-main group-hover:scale-110 transition-transform" />
+              전체 포트폴리오 PDF 저장
+            </button>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            {!user ? (
             <div className="flex flex-col items-end gap-2">
               <button
                 onClick={handleGoogleLogin}
@@ -251,7 +262,8 @@ const Admin = () => {
             </p>
           )}
         </div>
-      </header>
+      </div>
+    </header>
 
       {/* Tabs */}
       <div className="flex gap-4 border-b border-white/10 pb-4">
@@ -298,6 +310,20 @@ const Admin = () => {
             <div>Projects: <span className="text-white/60">{data.projects.length}</span></div>
             <div>Archive: <span className="text-white/60">{data.archive.length}</span></div>
             <div>Auth: <span className={user ? "text-green-400" : "text-red-400"}>{user ? "Authenticated" : "Not Authenticated"}</span></div>
+            <div>Total Size: <span className="text-white/60">{(new Blob([JSON.stringify(data)]).size / (1024 * 1024)).toFixed(2)} MB</span></div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-4">
+            {data.projects.map(p => {
+              const size = new Blob([JSON.stringify(p)]).size / (1024 * 1024);
+              return (
+                <div key={p.id} className="flex items-center gap-2">
+                  <span className="text-white/20">{p.title}:</span>
+                  <span className={size > 0.9 ? "text-red-400" : size > 0.7 ? "text-yellow-400" : "text-white/60"}>
+                    {size.toFixed(2)} MB
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -716,9 +742,15 @@ const ProjectManager = ({ projects, onAdd, onUpdate, onDelete, accentColor, reor
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [newProjectId, setNewProjectId] = useState<string>('');
+
+  const handleAddClick = () => {
+    setNewProjectId(Math.random().toString(36).substr(2, 9));
+    setIsAdding(true);
+  };
 
   const emptyProject: Project = {
-    id: Math.random().toString(36).substr(2, 9),
+    id: newProjectId,
     title: '',
     subtitle: '',
     about: '',
@@ -729,7 +761,7 @@ const ProjectManager = ({ projects, onAdd, onUpdate, onDelete, accentColor, reor
     metrics: '',
     imageFilter: 'none',
     tools: [],
-    images: ['https://picsum.photos/seed/new/1200/800'],
+    images: [], // Start empty instead of placeholder
     contentBlocks: [
       { id: '1', type: 'text', title: 'Project Details', content: '', sectionId: 'details' },
       { id: '2', type: 'text', title: 'Things I Did', content: '', sectionId: 'things' }
@@ -751,7 +783,7 @@ const ProjectManager = ({ projects, onAdd, onUpdate, onDelete, accentColor, reor
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold tracking-tight">프로젝트 리스트</h2>
         <button
-          onClick={() => setIsAdding(true)}
+          onClick={handleAddClick}
           className="px-6 py-2 rounded-full bg-white text-black text-sm font-bold flex items-center gap-2"
         >
           <Plus size={16} /> 프로젝트 추가
@@ -858,8 +890,8 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 1200;
-
+          const maxDim = 1000; // Reduced from 1200
+          
           if (width > height) {
             if (width > maxDim) {
               height *= maxDim / width;
@@ -876,7 +908,7 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
-          const base64String = canvas.toDataURL('image/jpeg', 0.7);
+          const base64String = canvas.toDataURL('image/jpeg', 0.6); // Reduced from 0.7
 
           if (blockId) {
             // Upload to specific block
@@ -888,10 +920,13 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
             }));
           } else {
             // Upload to main images
-            setFormData(prev => ({
-              ...prev,
-              images: [...prev.images, base64String].slice(0, 5)
-            }));
+            setFormData(prev => {
+              const currentImages = prev.images.filter(img => !img.includes('picsum.photos/seed/new'));
+              return {
+                ...prev,
+                images: [...currentImages, base64String].slice(0, 5)
+              };
+            });
           }
         };
         img.src = reader.result as string;
@@ -954,17 +989,16 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
   };
 
   const [isSaving, setIsSaving] = useState(false);
+  
+  const dataSize = new Blob([JSON.stringify(formData)]).size;
+  const sizeMB = dataSize / (1024 * 1024);
+  const isTooLarge = sizeMB > 0.95;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Calculate total data size (approximate)
-    const dataStr = JSON.stringify(formData);
-    const sizeInBytes = new Blob([dataStr]).size;
-    const sizeInMB = sizeInBytes / (1024 * 1024);
-
-    if (sizeInMB > 0.9) {
-      alert(`데이터 용량이 너무 큽니다 (${sizeInMB.toFixed(2)}MB / 최대 1MB). 이미지를 줄이거나 텍스트를 정리해 주세요.`);
+    if (isTooLarge) {
+      alert(`데이터 용량이 너무 큽니다 (${sizeMB.toFixed(2)}MB / 최대 1MB). 이미지를 줄이거나 텍스트를 정리해 주세요.`);
       return;
     }
 
@@ -988,6 +1022,30 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
 
   return (
     <form onSubmit={handleSave} className="flex flex-col gap-12">
+      <div className="flex justify-between items-center sticky top-0 bg-zinc-900 z-20 pb-4 border-b border-white/10 mb-8">
+        <h3 className="text-2xl font-bold tracking-tight">프로젝트 {project.id ? '수정' : '추가'}</h3>
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col items-end">
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${isTooLarge ? 'text-red-500' : 'text-white/40'}`}>
+              Data Size: {sizeMB.toFixed(2)} MB / 1.00 MB
+            </span>
+            <div className="w-32 h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-300 ${isTooLarge ? 'bg-red-500' : 'bg-main'}`}
+                style={{ width: `${Math.min(100, sizeMB * 100)}%` }}
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={isSaving || isTooLarge}
+            className="px-8 py-3 rounded-full bg-white text-black font-bold hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+          >
+            {isSaving ? '저장 중...' : '저장하기'}
+          </button>
+        </div>
+      </div>
+
       {/* Basic Info Section */}
       <div className="grid md:grid-cols-2 gap-8">
         <div className="flex flex-col gap-6">
@@ -1071,7 +1129,36 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
             />
           </div>
           <div className="flex flex-col gap-4">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">메인 이미지 (최대 5장)</label>
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold uppercase tracking-widest text-white/40">메인 이미지 (썸네일 및 대표 이미지)</label>
+              {formData.mainImage && (
+                <button 
+                  type="button"
+                  onClick={() => setFormData({ ...formData, mainImage: undefined })}
+                  className="text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors"
+                >
+                  대표 이미지 해제 (첫 번째 썸네일 사용)
+                </button>
+              )}
+            </div>
+            
+            {formData.mainImage && (
+              <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border-2 border-main/50 group mb-4">
+                <img src={formData.mainImage} alt="Main" className="w-full h-full object-cover" />
+                <div className="absolute top-4 left-4 px-3 py-1 bg-main text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                  Current Main Image
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, mainImage: undefined })}
+                  className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2"
+                >
+                  <Trash2 size={24} />
+                  <span className="text-xs font-bold uppercase tracking-widest">대표 이미지 해제</span>
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-5 gap-2">
               {formData.images.map((img, i) => (
                 <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-white/10 group">
@@ -1235,15 +1322,6 @@ const ProjectForm = ({ project, onSave, accentColor }: { project: Project; onSav
           ))}
         </div>
       </div>
-
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="px-8 py-5 rounded-full text-black font-bold hover:scale-105 transition-transform text-lg disabled:opacity-50 disabled:scale-100"
-        style={{ backgroundColor: accentColor }}
-      >
-        {isSaving ? '저장 중...' : '프로젝트 저장하기'}
-      </button>
     </form>
   );
 };

@@ -119,13 +119,15 @@ const ProjectPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10">
           <div className="flex flex-col gap-8">
-            <button 
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-main hover:text-white transition-colors group w-fit"
-            >
-              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              Return to Index
-            </button>
+            <div className="flex items-center gap-6 no-print">
+              <button 
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-main hover:text-white transition-colors group w-fit"
+              >
+                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                Return to Index
+              </button>
+            </div>
             <div className="flex flex-col gap-6">
               <h1 
                 className="font-black tracking-tighter leading-none text-white"
